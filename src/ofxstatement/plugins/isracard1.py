@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 from ofxstatement.plugin import Plugin
 from ofxstatement.parser import StatementParser
 from ofxstatement.statement import StatementLine, Statement
+from ofxstatement.exceptions import ParseError
 
 
 class Isracard1Plugin(Plugin):
@@ -25,17 +26,10 @@ class Isracard1Parser(StatementParser):
         process the file.
         """
         with open(self.filename, "r", encoding='iso-8859-8') as f:
-            self.soup = BeautifulSoup(f, "lxml")
-            self.statement = Statement()
+            soup = BeautifulSoup(f, 'lxml')
+            statement = Statement()
+            table = soup.find_all('table', id='trBlueOnWhite12')
+            if len(table) == 0:
+                raise ParseError(0, "'trBlueonWhite12' table not found")
             q.d()
-            return super(Isracard1Parser, self).parse()
-
-    def split_records(self):
-        """Return iterable object consisting of a line per transaction
-        """
-        return ['a', 'b']
-
-    def parse_record(self, line):
-        """Parse given transaction line and return StatementLine object
-        """
-        return StatementLine()
+            return statement
