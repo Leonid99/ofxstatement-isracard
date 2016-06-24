@@ -9,10 +9,10 @@ version = "0.0.1"
 with open('README.rst') as f:
     long_description = f.read()
 
-setup(name='ofxstatement-sample',
+setup(name='ofxstatement-israel',
       version=version,
-      author="Andrey Lebedev",
-      author_email="andrey@lebedev.lt",
+      author="Leonid Podolny",
+      author_email="leonid@podolny.net",
       url="https://github.com/kedder/ofxstatement",
       description=("Sample plugin for ofxstatement"),
       long_description=long_description,
@@ -32,7 +32,7 @@ setup(name='ofxstatement-sample',
       namespace_packages=["ofxstatement", "ofxstatement.plugins"],
       entry_points={
           'ofxstatement':
-          ['sample = ofxstatement.plugins.sample:SamplePlugin']
+          ['isracard1 = ofxstatement.plugins.isracard1:Isracard1Plugin']
           },
       install_requires=['ofxstatement'],
       include_package_data=True,
