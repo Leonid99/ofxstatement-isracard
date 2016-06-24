@@ -1,13 +1,16 @@
+import q
+from bs4 import BeautifulSoup
+
 from ofxstatement.plugin import Plugin
 from ofxstatement.parser import StatementParser
-from ofxstatement.statement import StatementLine
+from ofxstatement.statement import StatementLine, Statement
 
 
 class Isracard1Plugin(Plugin):
     """Isracard1 plugin (for developers only)
     """
 
-    def getParser(self, filename):
+    def get_parser(self, filename):
         return Isracard1Parser(filename)
 
 
@@ -21,14 +24,16 @@ class Isracard1Parser(StatementParser):
         super() implementation will call to split_records and parse_record to
         process the file.
         """
-        with open(self.filename, "r") as f:
-            self.input = f
+        with open(self.filename, "r", encoding='iso-8859-8') as f:
+            self.soup = BeautifulSoup(f, "lxml")
+            self.statement = Statement()
+            q.d()
             return super(Isracard1Parser, self).parse()
 
     def split_records(self):
         """Return iterable object consisting of a line per transaction
         """
-        return []
+        return ['a', 'b']
 
     def parse_record(self, line):
         """Parse given transaction line and return StatementLine object

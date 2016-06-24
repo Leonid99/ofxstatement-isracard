@@ -4,13 +4,13 @@
 from setuptools import find_packages
 from distutils.core import setup
 
-version = "0.0.1"
+VERSION = "0.0.1"
 
 with open('README.rst') as f:
     long_description = f.read()
 
 setup(name='ofxstatement-israel',
-      version=version,
+      version=VERSION,
       author="Leonid Podolny",
       author_email="leonid@podolny.net",
       url="https://github.com/kedder/ofxstatement",
@@ -34,7 +34,7 @@ setup(name='ofxstatement-israel',
           'ofxstatement':
           ['isracard1 = ofxstatement.plugins.isracard1:Isracard1Plugin']
           },
-      install_requires=['ofxstatement'],
+      install_requires=['ofxstatement', 'configparser', 'beautifulsoup4', 'lxml'],
       include_package_data=True,
       zip_safe=True
       )
