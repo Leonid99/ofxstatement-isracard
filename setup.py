@@ -32,9 +32,10 @@ setup(name='ofxstatement-israel',
       namespace_packages=["ofxstatement", "ofxstatement.plugins"],
       entry_points={
           'ofxstatement':
-          ['isracard1 = ofxstatement.plugins.isracard1:Isracard1Plugin']
+          ['isracard1 = ofxstatement.plugins.isracard1:Isracard1Plugin',
+          'hapoalim1 = ofxstatement.plugins.hapoalim1:Hapoalim1Plugin']
           },
-      install_requires=['ofxstatement', 'configparser', 'beautifulsoup4', 'lxml'],
+      install_requires=['ofxstatement', 'configparser', 'beautifulsoup4', 'lxml', 'python-dateutil'],
       include_package_data=True,
       zip_safe=True
       )
