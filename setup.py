@@ -33,7 +33,7 @@ setup(name='ofxstatement-israel',
       entry_points={
           'ofxstatement':
           ['isracard1 = ofxstatement.plugins.isracard1:Isracard1Plugin',
-          'hapoalim = ofxstatement.plugins.hapoalim:Hapoalim1Plugin']
+          'hapoalim = ofxstatement.plugins.hapoalim:HapoalimPlugin']
           },
       install_requires=['ofxstatement', 'configparser', 'beautifulsoup4', 'lxml', 'python-dateutil', 'openpyxl'],
       include_package_data=True,
