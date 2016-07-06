@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 import dateutil.parser
 import openpyxl
 import zipfile
+import q
 
 from ofxstatement.plugin import Plugin
 from ofxstatement.parser import StatementParser
@@ -65,6 +66,13 @@ class HapoalimParser(StatementParser):
                 return n
         return None
 
+    @staticmethod
+    def get_float(s):
+        NBSP = u'\xa0'
+        if s == NBSP:
+            return None
+        return float(s.replace(',', ''))
+
     def parse(self):
         DATA_DATE = 'data_date'
         DATA_AMT = 'data_amt'
@@ -77,12 +85,6 @@ class HapoalimParser(StatementParser):
             def parse_tr(tr):
                 def get_header(tr, n):
                     return str(tr.find_all(headers='header'+str(n))[0].string)
-
-                def get_float(s):
-                    NBSP = u'\xa0'
-                    if s == NBSP:
-                        return None
-                    return float(s.replace(',', ''))
 
                 hdrs = tr.find_all(headers=True)
                 assert len(hdrs) in [0, 7]
@@ -98,13 +100,12 @@ class HapoalimParser(StatementParser):
                     date_or_comm = dateutil.parser.parse(get_header(tr, 1), dayfirst=True)
                     desc = get_header(tr, 2)
 
-                    paym = get_float(get_header(tr, 5))
-                    depo = get_float(get_header(tr, 6))
+                    paym = self.get_float(get_header(tr, 5))
+                    depo = self.get_float(get_header(tr, 6))
 
-                    if (depo is None) == (paym is None):
-                        raise Exception('Either depo or paym need to exist, but not both: ' + str(tr))
+                    assert (depo is None) != (paym is None), 'Either depo or paym need to exist, but not both: ' + str(tr)
 
-                    bal = get_float(get_header(tr, 7))
+                    bal = self.get_float(get_header(tr, 7))
 
                 return cont, date_or_comm, desc, paym, depo, bal
 
@@ -129,14 +130,37 @@ class HapoalimParser(StatementParser):
                 return data
 
         def parser_new(filename):
-            return []
+            with open(filename, 'r', encoding='iso-8859-8') as f:
+                bs = BeautifulSoup(f, 'lxml')
+            trs = bs.find_all('table', i__d='trBlueOnWhite12')[0].find_all('tr', recursive=False)
+
+            data = []
+            for tr in trs[1:]:
+                new_line = {}
+                tds = tr.find_all('td')
+                if len(tds) != 7:
+                    continue
+                new_line[DATA_DATE] = dateutil.parser.parse(str(tds[0].string), dayfirst=True)
+                new_line[DATA_DSC] = str(tds[1].string)
+
+                paym = self.get_float(str(tds[4].string))
+                depo = self.get_float(str(tds[5].string))
+                assert (depo is None) != (paym is None), 'Either depo or paym need to exist, but not both: ' + str(tds)
+                new_line[DATA_AMT] = -paym if paym is not None else depo
+
+                new_line[DATA_BAL] = self.get_float(str(tds[6].string))
+
+                new_line[DATA_MEMO] = None
+
+                data.append(new_line)
+
+            return data
         def parser_xslx(filename):
             return []
         PARSERS = [parser_old, parser_new, parser_xslx]
 
         v = self.detect_version()
-        if v is None:
-            raise Exception("Unsupported file %s" % self.filename)
+        assert v is not None, "Unsupported file %s" % self.filename
         self.log("Detected file of version %d" % v)
 
         data = PARSERS[v](self.filename)
