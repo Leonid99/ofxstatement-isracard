@@ -4,7 +4,6 @@ from bs4 import BeautifulSoup
 import dateutil.parser
 import openpyxl
 import zipfile
-import q
 
 from ofxstatement.plugin import Plugin
 from ofxstatement.parser import StatementParser
@@ -54,7 +53,6 @@ class HapoalimParser(StatementParser):
                 if wb.sheetnames[0] != 'גיליון1':
                     return False
                 return wb.worksheets[0]['A6'].value == "תאריך"
-
             except (openpyxl.utils.exceptions.InvalidFileException, zipfile.BadZipFile):
                 return False
             return False
@@ -69,7 +67,7 @@ class HapoalimParser(StatementParser):
     @staticmethod
     def get_float(s):
         NBSP = u'\xa0'
-        if s == NBSP:
+        if s in ['', NBSP]:
             return None
         return float(s.replace(',', ''))
 
@@ -155,8 +153,33 @@ class HapoalimParser(StatementParser):
                 data.append(new_line)
 
             return data
+
         def parser_xslx(filename):
-            return []
+            with open(filename, 'rb') as f:
+                ws = openpyxl.load_workbook(f).worksheets[0]
+
+            iterrows = iter(ws.rows)
+            for _ in range(6):
+                next(iterrows)
+
+            data = []
+            for row in iterrows:
+                new_line = {}
+                new_line[DATA_DATE] = dateutil.parser.parse(str(row[0].value), dayfirst=False)
+                new_line[DATA_DSC] = str(row[1].value)
+
+                paym = self.get_float(str(row[3].value))
+                depo = self.get_float(str(row[4].value))
+                assert (depo is None) != (paym is None), 'Either depo or paym need to exist, but not both: '
+                new_line[DATA_AMT] = -paym if paym is not None else depo
+
+                new_line[DATA_BAL] = self.get_float(str(row[5].value))
+
+                new_line[DATA_MEMO] = " ".join([str(c.value) for c in row[7:] if c.value is not None])
+
+                data.append(new_line)
+
+            return data
         PARSERS = [parser_old, parser_new, parser_xslx]
 
         v = self.detect_version()
@@ -173,7 +196,14 @@ class HapoalimParser(StatementParser):
             stmt_line.payee = d[DATA_DSC]
             if d[DATA_MEMO] is not None:
                 stmt_line.memo = d[DATA_MEMO]
-            stmt_line.trntype = "CASH" if d[DATA_AMT] < 0 else "DEP" #TODO: check,etc
+
+            if stmt_line.payee.startswith('משיכה'):
+                stmt_line.trntype = 'ATM'
+            elif stmt_line.payee.startswith('שיק'):
+                stmt_line.trntype = 'CHECK'
+            else:
+                stmt_line.trntype = "CASH" if d[DATA_AMT] < 0 else "DEP"
+
             stmt_line.assert_valid()
             stmnt.lines.append(stmt_line)
         return stmnt
